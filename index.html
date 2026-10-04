@@ -106,7 +106,6 @@
         .game-overlay .h-6 { height: 14px; }
         .game-overlay .mb-2 { margin-bottom: 4px; }
         .touch-controls { display: block; position: relative; grid-row: 3; height: 34px; background: #1f2937; }
-        .control-hint { margin: 0; text-align: center; padding: 6px; font-size: 13px; color: #e5e7eb; }
         .d-pad, .action-btn { display: none; }
         .touch-controls button { touch-action: none; -webkit-touch-callout: none; font-family: inherit; -webkit-user-select: none; user-select: none; }
         button:focus-visible { outline: 3px solid #facc15; outline-offset: 3px; }
@@ -116,7 +115,6 @@
         .app-shell > .absolute h1 { font-size: clamp(28px, 6vw, 60px); }
         @media (any-pointer: coarse), (max-width: 700px) {
             .touch-controls { height: 140px; }
-            .control-hint { font-size: 12px; padding: 4px; }
             .d-pad { display: block; width: 168px; height: 112px; left: 12px; bottom: 4px; }
             .ctrl-btn { width: 52px; height: 52px; border-radius: 12px; font-size: 23px; background: #475569; border: 2px solid #94a3b8; }
             .ctrl-up { top: 0; left: 56px; }
@@ -146,7 +144,30 @@
             .ctrl-btn { width: 44px; height: 44px; font-size: 20px; }
             .ctrl-up, .ctrl-down { left: 50px; }
             .action-btn { width: 68px; height: 68px; bottom: 14px; }
-            .control-hint { position: absolute; top: 6px; left: 170px; right: 100px; font-size: 11px; }
+        }
+        /* Compact portrait frame and landscape controls beside the arena. */
+        .game-layout .touch-controls { height: 0; }
+        @media (any-pointer: coarse), (max-width: 700px) {
+            .game-layout .touch-controls { height: 120px; }
+        }
+        @media (orientation: portrait) and (max-width: 700px) {
+            .game-layout { grid-template-rows: auto auto auto; align-content: center; gap: 8px; }
+            .game-layout canvas { aspect-ratio: 2 / 1; height: auto; border-top: 1px solid #334155; border-bottom: 1px solid #334155; }
+            .game-layout .game-overlay { padding: 6px 8px; }
+            .game-layout .touch-controls { background: #111827; }
+            .game-overlay > .flex { grid-column: 1 / -1; }
+        }
+        @media (orientation: landscape) and (any-pointer: coarse), (orientation: landscape) and (max-width: 700px) {
+            .game-layout { grid-template-rows: auto minmax(0, 1fr); }
+            .game-layout canvas { width: calc(100% - 240px); justify-self: center; }
+            .game-layout .touch-controls { position: absolute; bottom: 12px; left: 0; right: 0; height: 104px; background: transparent; pointer-events: none; }
+            .game-layout .d-pad { width: 108px; height: 104px; left: 6px; bottom: 0; }
+            .game-layout .ctrl-btn { width: 48px; height: 48px; font-size: 20px; pointer-events: auto; }
+            .game-layout .ctrl-up { top: 0; left: 0; }
+            .game-layout .ctrl-down { bottom: 0; left: 54px; }
+            .game-layout .ctrl-left { bottom: 0; left: 0; }
+            .game-layout .ctrl-right { top: 0; right: 0; }
+            .game-layout .action-btn { right: 16px; bottom: 16px; width: 80px; height: 80px; pointer-events: auto; }
         }
     </style>
 </head>
@@ -405,11 +426,10 @@
                 <div className="text-xl mb-8 text-center max-w-md p-4 bg-black bg-opacity-60 rounded-lg border-2 border-gray-600">
                     <p className="mb-2">你是精英獵人 (Hunter)，準備好接受挑戰了嗎？</p>
                     <ul className="text-left text-sm md:text-base space-y-2 mt-4 text-gray-200">
-                        <li>🌲 <b>第一關：</b> 叢林跑酷 - 左右移動，<span className="text-yellow-300">按「上」跳躍</span>，<span className="text-yellow-300">按「下」趴下</span>躲避障礙！<br/><span className="text-yellow-400">技巧：射擊錯誤會扣血！</span></li>
-                        <li>🦖 <b>第二關：</b> 恐龍決戰 - 跳上平台躲避恐龍 (Dinosaur) 的衝撞！<span className="text-red-400">快速反應：射擊正確單字！</span></li>
+                        <li>🌲 <b>第一關：</b>叢林冒險</li>
+                        <li>🦖 <b>第二關：</b>恐龍決戰</li>
                     </ul>
                 </div>
-                <p className="text-sm text-gray-200 text-center mb-3">電腦：方向鍵移動／上跳／下趴，空白鍵射擊。手機與平板：使用下方按鍵，可同時移動與射擊；橫向畫面更寬廣。</p>
                 <button onClick={onStart} className="px-8 py-4 bg-red-600 hover:bg-red-500 text-white font-bold rounded-xl text-2xl shadow-lg transform transition active:scale-95 border-b-4 border-red-800">開始遊戲 (Start)</button>
             </div>
         );
@@ -481,7 +501,7 @@
                 onContextMenu: e => e.preventDefault()
             });
             return (
-                <div className="touch-controls" aria-label="遊戲操作"><p className="control-hint">方向鍵移動／上跳／下趴・空白鍵射擊；觸控可同時按住方向與射擊</p>
+                <div className="touch-controls" aria-label="遊戲操作">
                     <div className="d-pad">
                         <button type="button" aria-label="跳躍與向上射擊" className="ctrl-btn ctrl-up" {...bindings('ArrowUp')}>⬆</button>
                         <button type="button" aria-label="趴下" className="ctrl-btn ctrl-down" {...bindings('ArrowDown')}>⬇</button>
