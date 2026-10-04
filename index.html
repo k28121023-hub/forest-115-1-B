@@ -184,6 +184,17 @@
         @media (orientation: portrait) and (max-width: 700px) {
             .game-layout .touch-controls { height: 132px; padding: 12px 20px; }
         }
+        /* Fixed control columns prevent either side from being pushed offscreen. */
+        .game-layout { min-width: 0; box-sizing: border-box; }
+        .game-layout .touch-controls { width: 100%; min-width: 0; padding: 16px 32px; }
+        .game-layout .action-btn { grid-column: 1; grid-row: 1; margin: 0; justify-self: start; }
+        .game-layout .d-pad { grid-column: 3; grid-row: 1; margin: 0; justify-self: end; }
+        @media (any-pointer: coarse), (max-width: 700px) {
+            .game-layout .touch-controls { display: grid; grid-template-columns: 48px minmax(0, 1fr) 108px; align-items: center; gap: 0; height: 140px; padding: 16px 32px; }
+        }
+        @media (orientation: portrait) and (max-width: 700px) {
+            .app-shell .game-layout { width: calc(var(--game-viewport-height, 100dvh) - 24px); height: calc(var(--game-viewport-width, 100vw) - 12px); }
+        }
     </style>
 </head>
 <body>
