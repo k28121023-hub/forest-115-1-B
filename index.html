@@ -201,6 +201,12 @@
         @media (any-pointer: coarse), (max-width: 700px) {
             .game-layout .touch-controls { grid-template-columns: 48px minmax(0, 1fr) 144px; padding-left: 36px; padding-right: 48px; overflow: visible; }
         }
+        /* Larger cross targets and diagonal sliding keep movement during jumps. */
+        .game-layout .d-pad { grid-template-columns: repeat(3, 40px); grid-template-rows: repeat(3, 40px); width: 156px; height: 120px; }
+        .game-layout .ctrl-btn { width: 40px; height: 40px; }
+        @media (any-pointer: coarse), (max-width: 700px) {
+            .game-layout .touch-controls { grid-template-columns: 48px minmax(0, 1fr) 156px; height: 152px; }
+        }
     </style>
 </head>
 <body>
@@ -515,13 +521,15 @@
             const pointers = useRef(new Map());
             const inputRef = useRef(onInput);
             inputRef.current = onInput;
+            const syncInputs = () => {
+                const held = new Set([...pointers.current.values()].flat());
+                ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].forEach(key => {
+                    inputRef.current(key, held.has(key));
+                    document.querySelectorAll(`[data-control-key="${key}"]`).forEach(button => button.dataset.held = String(held.has(key)));
+                });
+            };
             useEffect(() => {
-                const releaseAll = () => {
-                    new Set(pointers.current.values()).forEach(key => inputRef.current(key, false));
-                    pointers.current.clear();
-                    document.querySelectorAll('[data-held]').forEach(button => button.dataset.held = 'false');
-                    ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].forEach(key => inputRef.current(key, false));
-                };
+                const releaseAll = () => { pointers.current.clear(); syncInputs(); };
                 window.addEventListener('blur', releaseAll);
                 document.addEventListener('visibilitychange', releaseAll);
                 window.addEventListener('orientationchange', releaseAll);
@@ -535,18 +543,32 @@
             const press = key => e => {
                 e.preventDefault();
                 e.currentTarget.setPointerCapture(e.pointerId);
-                e.currentTarget.dataset.held = 'true';
-                pointers.current.set(e.pointerId, key);
-                inputRef.current(key, true);
+                pointers.current.set(e.pointerId, [key]);
+                syncInputs();
             };
-            const release = e => {
-                e.currentTarget.dataset.held = 'false';
-                const key = pointers.current.get(e.pointerId);
-                pointers.current.delete(e.pointerId);
-                if (key && ![...pointers.current.values()].includes(key)) inputRef.current(key, false);
+            const slide = e => {
+                if (!pointers.current.has(e.pointerId) || pointers.current.get(e.pointerId).includes('Space')) return;
+                const pad = e.currentTarget.closest('.touch-controls').querySelector('.d-pad');
+                const rect = pad.getBoundingClientRect();
+                const rotated = getComputedStyle(pad.closest('.game-layout')).transform !== 'none';
+                const x = rotated ? e.clientY - rect.top : e.clientX - rect.left;
+                const y = rotated ? rect.right - e.clientX : e.clientY - rect.top;
+                const width = rotated ? rect.height : rect.width;
+                const height = rotated ? rect.width : rect.height;
+                const keys = [];
+                if (x >= 0 && x <= width && y >= 0 && y <= height) {
+                    if (x < width / 3) keys.push('ArrowLeft');
+                    else if (x > width * 2 / 3) keys.push('ArrowRight');
+                    if (y < height / 3) keys.push('ArrowUp');
+                    else if (y > height * 2 / 3) keys.push('ArrowDown');
+                }
+                const previous = pointers.current.get(e.pointerId);
+                if (keys.join() !== previous.join()) { pointers.current.set(e.pointerId, keys); syncInputs(); }
             };
+            const release = e => { pointers.current.delete(e.pointerId); syncInputs(); };
             const bindings = key => ({
-                onPointerDown: press(key), onPointerUp: release,
+                'data-control-key': key,
+                onPointerDown: press(key), onPointerMove: slide, onPointerUp: release,
                 onPointerCancel: release, onLostPointerCapture: release,
                 onContextMenu: e => e.preventDefault()
             });
@@ -599,7 +621,7 @@
 
             const handleKeyDown = (e) => { if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.code)) { e.preventDefault(); stateRef.current.keys[e.code] = true; if (e.code === 'ArrowUp') stateRef.current.jumpBuffer = 8; } };
             const handleKeyUp = (e) => stateRef.current.keys[e.code] = false;
-            const handleMobileInput = (key, active) => { stateRef.current.keys[key] = active; if (key === 'ArrowUp' && active) stateRef.current.jumpBuffer = 8; };
+            const handleMobileInput = (key, active) => { stateRef.current.keys[key] = active; if (key === 'ArrowUp' && active && !stateRef.current.touchJumpHeld) stateRef.current.jumpBuffer = 12; if (key === 'ArrowUp') stateRef.current.touchJumpHeld = active; };
             const handleWordCompletedRef = useRef(handleWordCompleted);
             handleWordCompletedRef.current = handleWordCompleted;
 
@@ -853,7 +875,7 @@
 
             const handleKeyDown = (e) => { if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.code)) { e.preventDefault(); stateRef.current.keys[e.code] = true; if (e.code === 'ArrowUp') stateRef.current.jumpBuffer = 8; } };
             const handleKeyUp = (e) => stateRef.current.keys[e.code] = false;
-            const handleMobileInput = (key, active) => { stateRef.current.keys[key] = active; if (key === 'ArrowUp' && active) stateRef.current.jumpBuffer = 8; };
+            const handleMobileInput = (key, active) => { stateRef.current.keys[key] = active; if (key === 'ArrowUp' && active && !stateRef.current.touchJumpHeld) stateRef.current.jumpBuffer = 12; if (key === 'ArrowUp') stateRef.current.touchJumpHeld = active; };
 
             const spawnBlood = (x, y) => { for(let i=0; i<8; i++) { stateRef.current.particles.push({ x: x, y: y, vx: (Math.random() - 0.5) * 8, vy: (Math.random() - 0.5) * 8 - 2, life: 1.0, color: `rgba(255, ${Math.random()*50}, 0, 1)` }); } };
             const rectIntersect = (r1, r2) => !(r2.x > r1.x + (r1.w || r1.width) || r2.x + (r2.w || r2.width) < r1.x || r2.y > r1.y + (r1.h || r1.height) || r2.y + (r2.h || r2.height) < r1.y);
