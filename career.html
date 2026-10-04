@@ -156,6 +156,18 @@
             .game-layout .d-pad { bottom: 3px; }
             .game-layout .action-btn { height: 44px; width: 44px; bottom: 3px; }
         }
+        /* Keep controls inside their row, including rotated safe-area padding. */
+        .app-shell { height: var(--game-viewport-height, 100dvh); }
+        .game-layout .touch-controls { box-sizing: border-box; padding: 6px 16px; }
+        .game-layout .d-pad { position: static; display: flex; flex: 0 0 auto; }
+        .game-layout .action-btn { position: static; display: flex; flex: 0 0 auto; margin-left: auto; }
+        @media (any-pointer: coarse), (max-width: 700px) {
+            .game-layout .touch-controls { display: flex; align-items: center; gap: 8px; height: 60px; }
+        }
+        @media (orientation: portrait) and (max-width: 700px) {
+            .app-shell .game-layout { width: var(--game-viewport-height, 100dvh); height: var(--game-viewport-width, 100vw); }
+            .game-layout .touch-controls { height: 68px; padding: 12px 18px; }
+        }
     </style>
 </head>
 <body>
@@ -383,6 +395,22 @@
 
         // --- APP ---
         function App() {
+            useEffect(() => {
+                const viewport = window.visualViewport;
+                const updateViewport = () => {
+                    const width = viewport ? viewport.width : window.innerWidth;
+                    const height = viewport ? viewport.height : window.innerHeight;
+                    document.documentElement.style.setProperty('--game-viewport-width', `${width}px`);
+                    document.documentElement.style.setProperty('--game-viewport-height', `${height}px`);
+                };
+                updateViewport();
+                window.addEventListener('resize', updateViewport);
+                viewport?.addEventListener('resize', updateViewport);
+                return () => {
+                    window.removeEventListener('resize', updateViewport);
+                    viewport?.removeEventListener('resize', updateViewport);
+                };
+            }, []);
             const [gameState, setGameState] = useState('menu'); 
             const [score, setScore] = useState(0);
             const [hp, setHp] = useState(100);
