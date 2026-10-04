@@ -354,7 +354,16 @@
         };
 
         // --- Helper: 繪製實體 ---
+        const mobileCharacterViewport = window.matchMedia('(any-pointer: coarse), (max-width: 700px)');
         const drawEntity = (ctx, assets, type, x, y, w, h, frameCount = 0, isMoving = false, isAimingUp = false, isCrouching = false, facing = 'right') => {
+            if (type === 'hunter' && mobileCharacterViewport.matches) {
+                // Enlarge only the drawing, anchored at the feet; physics stays unchanged.
+                const scale = 1.25;
+                x -= w * (scale - 1) / 2;
+                y -= h * (scale - 1);
+                w *= scale;
+                h *= scale;
+            }
             let currentType = type;
             let flip = false;
             
